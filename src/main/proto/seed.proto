@@ -15,10 +15,11 @@ enum AccountStatus {
 }
 
 message Account {
-  string name = 1;
-  string address = 2;
-  string ssn = 3;
-  AccountStatus status = 4;
+  int64 id = 1;
+  AccountStatus status = 2;
+  string name = 3;
+  string address = 4;
+  string ssn = 5;
 }
 
 message CreateAccountRequest {
@@ -26,7 +27,7 @@ message CreateAccountRequest {
 }
 
 message CreateAccountResponse {
-  bool success = 1;
-  repeated string errors = 2;
-  int64 id = 3;
+  int64 id = 1;
+  bool success = 2;
+  repeated string errors = 3;
 }
