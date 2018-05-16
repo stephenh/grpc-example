@@ -1,0 +1,44 @@
+
+plugins {
+  id "java"
+  id "com.google.protobuf" version "0.8.5"
+}
+
+def grpcVersion = '1.11.0'
+// This version must match the protobuf-java version that grpc transitively pulls in
+def protobufVersion = '3.5.1'
+
+repositories {
+  mavenCentral()
+}
+
+dependencies {
+  compile "io.grpc:grpc-netty:${grpcVersion}"
+  compile "io.grpc:grpc-protobuf:${grpcVersion}"
+  compile "io.grpc:grpc-stub:${grpcVersion}"
+  compile "ch.qos.logback:logback-classic:1.2.2"
+  compile "org.slf4j:jul-to-slf4j:1.7.25"
+  testCompile 'junit:junit:4.12'
+  testCompile 'org.hamcrest:java-hamcrest:2.0.0.0'
+  testCompile 'org.mockito:mockito-core:2.13.0'
+}
+
+protobuf {
+  protoc {
+    artifact = "com.google.protobuf:protoc:${protobufVersion}"
+  }
+  plugins {
+    grpc {
+      artifact = "io.grpc:protoc-gen-grpc-java:${grpcVersion}"
+    }
+  }
+  generateProtoTasks {
+    all()*.plugins {
+      grpc {}
+    }
+  }
+}
+
+sourceCompatibility = 1.8
+targetCompatibility = 1.8
+
