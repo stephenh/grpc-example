@@ -1,5 +1,6 @@
 package seed;
 
+import static org.hamcrest.CoreMatchers.hasItems;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
 
@@ -29,6 +30,21 @@ public class SeedServerTest {
     // and we see the account in the database
     db.useExtension(AccountDao.class, dao -> {
       assertThat(dao.count(), is(1L));
+    });
+  }
+
+  @Test
+  public void shouldNotAllowCreatingClosedAccounts() {
+    // given a request to make a closed account
+    CreateAccountRequest req = CreateAccountRequest.newBuilder().setAccount(TestData.newAccount().setStatus(AccountStatus.CLOSED).build()).build();
+    // when executed
+    CreateAccountResponse res = create(req);
+    // then it failed
+    assertThat(res.getSuccess(), is(false));
+    assertThat(res.getErrorsList(), hasItems("Accounts must be created in the OPEN status"));
+    // and we don't see the account
+    db.useExtension(AccountDao.class, dao -> {
+      assertThat(dao.count(), is(0L));
     });
   }
 

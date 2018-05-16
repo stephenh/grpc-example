@@ -8,10 +8,10 @@ import org.jdbi.v3.sqlobject.statement.SqlUpdate;
 
 public interface AccountDao {
 
-  @SqlUpdate("CREATE TABLE account (id INT AUTO_INCREMENT, name VARCHAR(200), address VARCHAR(200), ssn VARCHAR(200))")
+  @SqlUpdate("CREATE TABLE account (id INT AUTO_INCREMENT, status INT, name VARCHAR(200), address VARCHAR(200), ssn VARCHAR(200))")
   void createTable();
 
-  @SqlUpdate("INSERT INTO account (name, address, ssn) VALUES (:name, :address, :ssn)")
+  @SqlUpdate("INSERT INTO account (name, status, address, ssn) VALUES (:name, :statusValue, :address, :ssn)")
   void insert(@BindBean Account user);
   
   @SqlQuery("SELECT COUNT(*) FROM account")

@@ -9,10 +9,16 @@ service Seed {
   rpc CreateAccount(CreateAccountRequest) returns (CreateAccountResponse) {}
 }
 
+enum AccountStatus {
+  OPEN = 0;
+  CLOSED = 1;
+}
+
 message Account {
   string name = 1;
   string address = 2;
   string ssn = 3;
+  AccountStatus status = 4;
 }
 
 message CreateAccountRequest {
