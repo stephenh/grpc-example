@@ -3,99 +3,82 @@ package seed;
 import static org.jdbi.v3.core.mapper.reflect.ReflectionMapperUtil.findColumnIndex;
 import static org.jdbi.v3.core.mapper.reflect.ReflectionMapperUtil.getColumnNames;
 
-import java.beans.BeanInfo;
-import java.beans.IntrospectionException;
-import java.beans.Introspector;
-import java.beans.PropertyDescriptor;
-import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.lang.reflect.Type;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Stream;
 
 import org.jdbi.v3.core.mapper.ColumnMapper;
-import org.jdbi.v3.core.mapper.Nested;
 import org.jdbi.v3.core.mapper.RowMapper;
 import org.jdbi.v3.core.mapper.RowMapperFactory;
 import org.jdbi.v3.core.mapper.SingleColumnMapper;
-import org.jdbi.v3.core.mapper.reflect.ColumnName;
 import org.jdbi.v3.core.mapper.reflect.ColumnNameMatcher;
 import org.jdbi.v3.core.mapper.reflect.ReflectionMappers;
 import org.jdbi.v3.core.statement.StatementContext;
 
+import com.google.protobuf.Descriptors.Descriptor;
+import com.google.protobuf.Descriptors.FieldDescriptor;
+import com.google.protobuf.GeneratedMessageV3;
+import com.google.protobuf.GeneratedMessageV3.Builder;
+import com.google.protobuf.ProtocolMessageEnum;
+
 /**
-* A row mapper which maps the columns in a statement into a JavaBean. The default
-* implementation will perform a case insensitive mapping between the bean property
-* names and the column labels, also considering camel-case to underscores conversion.
-* This uses the JDK's built in bean mapping facilities, so it does not support nested
-* properties.
+* A row mapper which maps the columns in a statement into a Protobuf message.
 *
-* The mapped class must have a default constructor.
+* Note from Stephen: I totally did not expect this, but to get jdbi to hydrate Protobuf
+* beans, I had to fork the jdbi reflection-based RowMapper into this Protobuf-specific
+* mapper.
+*
+* This is because of Protobuf's borderline-annoying adherence to immutability, e.g.
+* protobuf beans themselves don't have setters, so we have to go through the builder
+* (which of course also does not have a public constructor).
+*
+* Currently this works for the homework's Account message and the Account-specific test
+* suite, but in real-life would need dedicated tests.
 */
 public class ProtoBeanMapper<T> implements RowMapper<T> {
-  /**
-   * Returns a mapper factory that maps to the given bean class
-   *
-   * @param type the mapped class
-   * @return a mapper factory that maps to the given bean class
-   */
-  public static RowMapperFactory factory(Class<?> type) {
-    return RowMapperFactory.of(type, ProtoBeanMapper.of(type));
+
+  /** Returns a mapper factory that maps to the given bean class. */
+  public static RowMapperFactory factory(Class<?> beanType, Class<?> builderType) {
+    return RowMapperFactory.of(beanType, ProtoBeanMapper.of(beanType, builderType));
   }
 
-  /**
-   * Returns a mapper factory that maps to the given bean class
-   *
-   * @param type the mapped class
-   * @param prefix the column name prefix for each mapped bean property
-   * @return a mapper factory that maps to the given bean class
-   */
-  public static RowMapperFactory factory(Class<?> type, String prefix) {
-    return RowMapperFactory.of(type, ProtoBeanMapper.of(type, prefix));
+  /** Returns a mapper factory that maps to the given bean class. */
+  public static RowMapperFactory factory(Class<?> beanType, Class<?> builderType, String prefix) {
+    return RowMapperFactory.of(beanType, ProtoBeanMapper.of(beanType, builderType, prefix));
   }
 
-  /**
-   * Returns a mapper for the given bean class
-   *
-   * @param <T> the type to find the mapper for
-   * @param type the mapped class
-   * @return a mapper for the given bean class
-   */
-  public static <T> RowMapper<T> of(Class<T> type) {
-    return ProtoBeanMapper.of(type, DEFAULT_PREFIX);
+  /** Returns a mapper for the given bean class. */
+  public static <T> RowMapper<T> of(Class<T> beanType, Class<?> builderType) {
+    return ProtoBeanMapper.of(beanType, builderType, DEFAULT_PREFIX);
   }
 
-  /**
-   * Returns a mapper for the given bean class
-   *
-   * @param <T> the type to find the mapper for
-   * @param type the mapped class
-   * @param prefix the column name prefix for each mapped bean property
-   * @return a mapper for the given bean class
-   */
-  public static <T> RowMapper<T> of(Class<T> type, String prefix) {
-    return new ProtoBeanMapper<>(type, prefix);
+  /** Returns a mapper for the given bean class. */
+  public static <T> RowMapper<T> of(Class<T> beanType, Class<?> builderType, String prefix) {
+    return new ProtoBeanMapper<>(beanType, builderType, prefix);
   }
 
   static final String DEFAULT_PREFIX = "";
 
-  private final Class<T> type;
+  private final Class<T> beanType;
+  private final Method newBuilder;
+  private final Method build;
   private final String prefix;
-  private final BeanInfo info;
-  private final Map<PropertyDescriptor, ProtoBeanMapper<?>> nestedMappers = new ConcurrentHashMap<>();
+  private final List<FieldDescriptor> descriptors;
+  // private final Map<PropertyDescriptor, ProtoBeanMapper<?>> nestedMappers = new ConcurrentHashMap<>();
 
-  private ProtoBeanMapper(Class<T> type, String prefix) {
-    this.type = type;
+  private ProtoBeanMapper(Class<T> beanType, Class<?> builderType, String prefix) {
+    this.beanType = beanType;
     this.prefix = prefix.toLowerCase();
     try {
-      info = Introspector.getBeanInfo(type);
-    } catch (IntrospectionException e) {
-      throw new IllegalArgumentException(e);
+      this.newBuilder = this.beanType.getMethod("newBuilder");
+      this.build = builderType.getMethod("build");
+      Descriptor descriptor = (Descriptor) this.beanType.getMethod("getDescriptor").invoke(null);
+      this.descriptors = descriptor.getFields();
+    } catch (Exception e) {
+      throw new RuntimeException(this.beanType + " does not look like a protobuf bean", e);
     }
   }
 
@@ -109,18 +92,15 @@ public class ProtoBeanMapper<T> implements RowMapper<T> {
     final List<String> columnNames = getColumnNames(rs);
     final List<ColumnNameMatcher> columnNameMatchers = ctx.getConfig(ReflectionMappers.class).getColumnNameMatchers();
     final List<String> unmatchedColumns = new ArrayList<>(columnNames);
-
     RowMapper<T> result = specialize0(rs, ctx, columnNames, columnNameMatchers, unmatchedColumns);
-
     if (ctx.getConfig(ReflectionMappers.class).isStrictMatching() && unmatchedColumns.stream().anyMatch(col -> col.startsWith(prefix))) {
-
       throw new IllegalArgumentException(
-        String.format("Mapping bean type %s could not match properties for columns: %s", type.getSimpleName(), unmatchedColumns));
+        String.format("Mapping bean type %s could not match properties for columns: %s", beanType.getSimpleName(), unmatchedColumns));
     }
-
     return result;
   }
 
+  @SuppressWarnings("unchecked")
   private RowMapper<T> specialize0(
     ResultSet rs,
     StatementContext ctx,
@@ -128,95 +108,131 @@ public class ProtoBeanMapper<T> implements RowMapper<T> {
     List<ColumnNameMatcher> columnNameMatchers,
     List<String> unmatchedColumns) throws SQLException {
     final List<RowMapper<?>> mappers = new ArrayList<>();
-    final List<PropertyDescriptor> properties = new ArrayList<>();
+    final List<FieldDescriptor> properties = new ArrayList<>();
 
-    for (PropertyDescriptor descriptor : info.getPropertyDescriptors()) {
-      Nested anno = Stream
-        .of(descriptor.getReadMethod(), descriptor.getWriteMethod())
-        .filter(Objects::nonNull)
-        .map(m -> m.getAnnotation(Nested.class))
-        .filter(Objects::nonNull)
-        .findFirst()
-        .orElse(null);
-
-      if (anno == null) {
-        String paramName = prefix + paramName(descriptor);
-
-        findColumnIndex(paramName, columnNames, columnNameMatchers, () -> debugName(descriptor)).ifPresent(index -> {
-          Type type = descriptor.getReadMethod().getGenericReturnType();
-          ColumnMapper<?> mapper = ctx.findColumnMapperFor(type).orElse((r, n, c) -> r.getObject(n));
-
+    for (FieldDescriptor descriptor : descriptors) {
+      // Nested anno = Stream
+      //   .of(descriptor.getReadMethod(), descriptor.getWriteMethod())
+      //   .filter(Objects::nonNull)
+      //   .map(m -> m.getAnnotation(Nested.class))
+      //   .filter(Objects::nonNull)
+      //   .findFirst()
+      //   .orElse(null);
+      String paramName = prefix + paramName(descriptor);
+      findColumnIndex(paramName, columnNames, columnNameMatchers, () -> debugName(descriptor)).ifPresent(index -> {
+        try {
+          Type type = mapToJavaType(descriptor);
+          ColumnMapper<?> mapper;
+          // Sneak in an enum-specific mapper if needed
+          if (type instanceof Class<?> && ProtocolMessageEnum.class.isAssignableFrom((Class<?>) type)) {
+            Method forNumber = ((Class<?>) type).getMethod("forNumber", int.class);
+            mapper = (r, n, c) -> {
+              try {
+                ProtocolMessageEnum value = (ProtocolMessageEnum) forNumber.invoke(null, r.getInt(n));
+                return value.getValueDescriptor();
+              } catch (Exception e) {
+                throw new RuntimeException(e);
+              }
+            };
+          } else {
+            mapper = ctx.findColumnMapperFor(type).orElse((r, n, c) -> r.getObject(n));
+          }
           mappers.add(new SingleColumnMapper<>(mapper, index + 1));
           properties.add(descriptor);
-
           unmatchedColumns.remove(columnNames.get(index));
-        });
-      } else {
-        String nestedPrefix = prefix + anno.value();
-
-        RowMapper<?> nestedMapper = nestedMappers
-          .computeIfAbsent(descriptor, d -> new ProtoBeanMapper<>(d.getPropertyType(), nestedPrefix))
-          .specialize0(rs, ctx, columnNames, columnNameMatchers, unmatchedColumns);
-
-        mappers.add(nestedMapper);
-        properties.add(descriptor);
-      }
+        } catch (ClassNotFoundException | NoSuchMethodException e) {
+          throw new RuntimeException(e);
+        }
+      });
     }
 
     if (mappers.isEmpty() && columnNames.size() > 0) {
-      throw new IllegalArgumentException(String.format("Mapping bean type %s " + "didn't find any matching columns in result set", type));
+      throw new IllegalArgumentException(String.format("Mapping bean type %s " + "didn't find any matching columns in result set", beanType));
     }
 
     return (r, c) -> {
-      T bean = construct();
-
+      GeneratedMessageV3.Builder<?> builder = construct();
       for (int i = 0; i < mappers.size(); i++) {
         RowMapper<?> mapper = mappers.get(i);
-        PropertyDescriptor property = properties.get(i);
-
+        FieldDescriptor property = properties.get(i);
         Object value = mapper.map(r, ctx);
-
-        writeProperty(bean, property, value);
+        builder.setField(property, value);
       }
-
-      return bean;
+      try {
+        return (T) build.invoke(builder);
+      } catch (Exception e) {
+        throw new RuntimeException("Could not call .build()", e);
+      }
     };
   }
 
-  private static String paramName(PropertyDescriptor descriptor) {
-    return Stream
-      .of(descriptor.getReadMethod(), descriptor.getWriteMethod())
-      .filter(Objects::nonNull)
-      .map(method -> method.getAnnotation(ColumnName.class))
-      .filter(Objects::nonNull)
-      .map(ColumnName::value)
-      .findFirst()
-      .orElseGet(descriptor::getName);
+  private static Type mapToJavaType(FieldDescriptor fd) throws ClassNotFoundException {
+    // some of these are probably wrong, especially the fixed/unsigned/etc
+    switch (fd.getType()) {
+      case BOOL:
+        return Boolean.TYPE;
+      case BYTES:
+        return Byte[].class;
+      case DOUBLE:
+        return Double.TYPE;
+      case ENUM:
+        return Class.forName(fd.getFile().getOptions().getJavaPackage() + "." + fd.getEnumType().getFullName());
+      case FIXED32:
+        return Integer.TYPE;
+      case FIXED64:
+        return Long.TYPE;
+      case FLOAT:
+        return Float.TYPE;
+      case GROUP:
+        return null;
+      case INT32:
+        return Integer.TYPE;
+      case INT64:
+        return Long.TYPE;
+      case MESSAGE:
+        return Class.forName(fd.getFile().getOptions().getJavaPackage() + "." + fd.getFullName());
+      case SFIXED32:
+        return Integer.TYPE;
+      case SFIXED64:
+        return Long.TYPE;
+      case SINT32:
+        return Integer.TYPE;
+      case SINT64:
+        return Long.TYPE;
+      case STRING:
+        return String.class;
+      case UINT32:
+        return Integer.TYPE;
+      case UINT64:
+        return Long.TYPE;
+      default:
+        return null;
+    }
   }
 
-  private String debugName(PropertyDescriptor descriptor) {
-    return String.format("%s.%s", type.getSimpleName(), descriptor.getName());
+  private static String paramName(FieldDescriptor descriptor) {
+    return descriptor.getName();
+    // could potentially do a look-up for grpc metadata?
+    // return Stream
+    //   .of(descriptor.getReadMethod(), descriptor.getWriteMethod())
+    //   .filter(Objects::nonNull)
+    //   .map(method -> method.getAnnotation(ColumnName.class))
+    //   .filter(Objects::nonNull)
+    //   .map(ColumnName::value)
+    //   .findFirst()
+    //   .orElseGet(descriptor::getName);
   }
 
-  private T construct() {
+  private String debugName(FieldDescriptor descriptor) {
+    return String.format("%s.%s", beanType.getSimpleName(), descriptor.getName());
+  }
+
+  private GeneratedMessageV3.Builder<?> construct() {
     try {
-      return type.newInstance();
+      return (Builder<?>) newBuilder.invoke(null);
     } catch (Exception e) {
-      throw new IllegalArgumentException(String.format("A bean, %s, was mapped " + "which was not instantiable", type.getName()), e);
+      throw new IllegalArgumentException(String.format("A bean, %s, was mapped " + "which was not instantiable", beanType.getName()), e);
     }
   }
 
-  private static void writeProperty(Object bean, PropertyDescriptor property, Object value) {
-    try {
-      property.getWriteMethod().invoke(bean, value);
-    } catch (IllegalAccessException e) {
-      throw new IllegalArgumentException(String.format("Unable to access setter for " + "property, %s", property.getName()), e);
-    } catch (InvocationTargetException e) {
-      throw new IllegalArgumentException(
-        String.format("Invocation target exception trying to " + "invoker setter for the %s property", property.getName()),
-        e);
-    } catch (NullPointerException e) {
-      throw new IllegalArgumentException(String.format("No appropriate method to " + "write property %s", property.getName()), e);
-    }
-  }
 }

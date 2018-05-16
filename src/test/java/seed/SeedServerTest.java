@@ -50,11 +50,35 @@ public class SeedServerTest {
     });
   }
 
+  @Test
+  public void shouldCloseAccounts() {
+    // given an existing account
+    db.useExtension(AccountDao.class, dao -> dao.insert(TestData.newAccount().build()));
+    // when it is closed
+    CloseAccountResponse res = close(1L);
+    // then it worked
+    assertThat(res.getSuccess(), is(true));
+    // and the account is closed
+    db.useExtension(AccountDao.class, dao -> {
+      assertThat(dao.read(1L).getStatus(), is(AccountStatus.CLOSED));
+    });
+  }
+
   private CreateAccountResponse create(Account.Builder account) {
     CreateAccountRequest req = CreateAccountRequest.newBuilder().setAccount(account.build()).build();
     // this is boilerplate-y, not a fan grpc's approach here
     StubObserver<CreateAccountResponse> res = new StubObserver<>();
     server.createAccount(req, res);
+    assertThat(res.values.size(), is(1));
+    assertThat(res.completed, is(true));
+    return res.values.get(0);
+  }
+
+  private CloseAccountResponse close(long accountId) {
+    CloseAccountRequest req = CloseAccountRequest.newBuilder().setId(accountId).build();
+    // this is boilerplate-y, not a fan grpc's approach here
+    StubObserver<CloseAccountResponse> res = new StubObserver<>();
+    server.closeAccount(req, res);
     assertThat(res.values.size(), is(1));
     assertThat(res.completed, is(true));
     return res.values.get(0);

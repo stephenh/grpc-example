@@ -34,4 +34,14 @@ public class SeedServer extends SeedImplBase {
     });
   }
 
+  @Override
+  public void closeAccount(CloseAccountRequest request, StreamObserver<CloseAccountResponse> responseObserver) {
+    db.useTransaction(handle -> {
+      Account account = handle.attach(AccountDao.class).read(request.getId());
+      handle.attach(AccountDao.class).update(account.toBuilder().setStatus(AccountStatus.CLOSED).build());
+      responseObserver.onNext(CloseAccountResponse.newBuilder().setSuccess(true).build());
+      responseObserver.onCompleted();
+    });
+  }
+
 }

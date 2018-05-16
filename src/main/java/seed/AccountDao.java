@@ -15,9 +15,14 @@ public interface AccountDao {
   @SqlUpdate("INSERT INTO account (name, status, address, ssn) VALUES (:name, :statusValue, :address, :ssn)")
   @GetGeneratedKeys
   long insert(@BindBean Account user);
-  
+
+  @SqlUpdate("UPDATE account SET name = :name, status = :statusValue, address = :address, ssn = :ssn WHERE id = :id")
+  void update(@BindBean Account user);
+
+  @SqlQuery("SELECT * FROM account WHERE id = ?")
+  Account read(long id);
+
   @SqlQuery("SELECT COUNT(*) FROM account")
   long count();
-  
 
 }

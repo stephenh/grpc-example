@@ -7,6 +7,8 @@ option java_outer_classname = "SeedProto";
 
 service Seed {
   rpc CreateAccount(CreateAccountRequest) returns (CreateAccountResponse) {}
+  
+  rpc CloseAccount(CloseAccountRequest) returns (CloseAccountResponse) {}
 }
 
 enum AccountStatus {
@@ -30,4 +32,13 @@ message CreateAccountResponse {
   int64 id = 1;
   bool success = 2;
   repeated string errors = 3;
+}
+
+message CloseAccountRequest {
+  int64 id = 1;
+}
+
+message CloseAccountResponse {
+  bool success = 1;
+  repeated string errors = 2;
 }

@@ -17,10 +17,11 @@ public class TestData {
     // would have to revisit.
     long dbId = nextDbId.incrementAndGet();
     Jdbi db = Jdbi.create("jdbc:h2:mem:test" + dbId + ";DB_CLOSE_DELAY=-1");
+    db.registerRowMapper(ProtoBeanMapper.factory(Account.class, Account.Builder.class));
     db.installPlugin(new SqlObjectPlugin());
     // Currently just re-issue all of the DML each time. In production would use migrations, e.g.
     // https://github.com/stephenh/joist/blob/master/features/src/migrations/java/features/migrations/m0001.java
-    db.useExtension(AccountDao.class,  dao -> dao.createTable());
+    db.useExtension(AccountDao.class, dao -> dao.createTable());
     return db;
   }
 
