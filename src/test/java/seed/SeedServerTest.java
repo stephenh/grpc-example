@@ -22,9 +22,9 @@ public class SeedServerTest {
   @Test
   public void shouldAllowCreatingAccounts() {
     // given a request to make an account
-    CreateAccountRequest req = CreateAccountRequest.newBuilder().setAccount(TestData.newAccount().build()).build();
+    Account.Builder account = TestData.newAccount();
     // when executed
-    CreateAccountResponse res = create(req);
+    CreateAccountResponse res = create(account);
     // then it was successful
     assertThat(res.getSuccess(), is(true));
     // and we see the account in the database
@@ -36,9 +36,9 @@ public class SeedServerTest {
   @Test
   public void shouldNotAllowCreatingClosedAccounts() {
     // given a request to make a closed account
-    CreateAccountRequest req = CreateAccountRequest.newBuilder().setAccount(TestData.newAccount().setStatus(AccountStatus.CLOSED).build()).build();
+    Account.Builder account = TestData.newAccount().setStatus(AccountStatus.CLOSED);
     // when executed
-    CreateAccountResponse res = create(req);
+    CreateAccountResponse res = create(account);
     // then it failed
     assertThat(res.getSuccess(), is(false));
     assertThat(res.getErrorsList(), hasItems("Accounts must be created in the OPEN status"));
@@ -48,7 +48,8 @@ public class SeedServerTest {
     });
   }
 
-  private CreateAccountResponse create(CreateAccountRequest req) {
+  private CreateAccountResponse create(Account.Builder account) {
+    CreateAccountRequest req = CreateAccountRequest.newBuilder().setAccount(account.build()).build();
     // this is boilerplate-y, not a fan grpc's approach here
     StubObserver<CreateAccountResponse> res = new StubObserver<>();
     server.createAccount(req, res);
