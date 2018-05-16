@@ -23,6 +23,16 @@ dependencies {
   testCompile 'org.mockito:mockito-core:2.13.0'
 }
 
+sourceSets {
+  // These shouldn't be necessary, but buildship wants them
+  main {
+    java {
+      srcDir 'build/generated/source/proto/main/grpc/'
+      srcDir 'build/generated/source/proto/main/java/'
+    }
+  }
+}
+
 protobuf {
   protoc {
     artifact = "com.google.protobuf:protoc:${protobufVersion}"
