@@ -28,8 +28,8 @@ public class SeedServer extends SeedImplBase {
       return;
     }
     db.useExtension(AccountDao.class, dao -> {
-      dao.insert(request.getAccount());
-      response.onNext(CreateAccountResponse.newBuilder().setSuccess(true).build());
+      long id = dao.insert(request.getAccount());
+      response.onNext(CreateAccountResponse.newBuilder().setId(id).setSuccess(true).build());
       response.onCompleted();
     });
   }

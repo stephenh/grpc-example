@@ -31,6 +31,8 @@ public class SeedServerTest {
     db.useExtension(AccountDao.class, dao -> {
       assertThat(dao.count(), is(1L));
     });
+    // and we got back the new account id
+    assertThat(res.getId(), is(1L));
   }
 
   @Test

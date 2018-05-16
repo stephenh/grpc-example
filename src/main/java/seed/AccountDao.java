@@ -1,6 +1,7 @@
 package seed;
 
 import org.jdbi.v3.sqlobject.customizer.BindBean;
+import org.jdbi.v3.sqlobject.statement.GetGeneratedKeys;
 import org.jdbi.v3.sqlobject.statement.SqlQuery;
 import org.jdbi.v3.sqlobject.statement.SqlUpdate;
 
@@ -12,7 +13,8 @@ public interface AccountDao {
   void createTable();
 
   @SqlUpdate("INSERT INTO account (name, status, address, ssn) VALUES (:name, :statusValue, :address, :ssn)")
-  void insert(@BindBean Account user);
+  @GetGeneratedKeys
+  long insert(@BindBean Account user);
   
   @SqlQuery("SELECT COUNT(*) FROM account")
   long count();
