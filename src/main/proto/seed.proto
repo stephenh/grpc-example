@@ -6,11 +6,20 @@ option java_package = "seed";
 option java_outer_classname = "SeedProto";
 
 service Seed {
-  rpc Ping(PingRequest) returns (PingResponse) {}
+  rpc CreateAccount(CreateAccountRequest) returns (CreateAccountResponse) {}
 }
 
-message PingRequest {
+message Account {
+  string name = 1;
+  string address = 2;
+  string ssn = 3;
 }
 
-message PingResponse {
+message CreateAccountRequest {
+  Account account = 1;
+}
+
+message CreateAccountResponse {
+  bool success = 1;
+  repeated string errors = 2;
 }
