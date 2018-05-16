@@ -17,6 +17,11 @@ public class SeedServer extends SeedImplBase {
   public void createAccount(CreateAccountRequest request, StreamObserver<CreateAccountResponse> response) {
     Account account = request.getAccount();
     // Accounts being open when created wasn't explicitly mentioned, but makes sense.
+    //
+    // Tangentially, we probably only want to allow a subset of Account fields to be set on creation;
+    // grpc does have a vague notion of projections, but they are enforced in the application code, e.g.
+    // FieldMask.newBuilder().add(...). Which is fine, but not as nice as putting them directly in the
+    // proto file, so it'd be clear to clients. I'm surprised that isn't supported better.
     if (account.getStatus() != AccountStatus.OPEN) {
       response.onNext(CreateAccountResponse.newBuilder().setSuccess(false).addErrors("Accounts must be created in the OPEN status").build());
       response.onCompleted();
