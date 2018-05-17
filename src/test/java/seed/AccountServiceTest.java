@@ -64,6 +64,19 @@ public class AccountServiceTest {
     });
   }
 
+  @Test
+  public void shouldCloseAnAlreadyClosedAccounts() {
+    // given an existing closed account
+    db.useExtension(AccountDao.class, dao -> dao.insert(TestData.newAccount().setStatus(AccountStatus.CLOSED).build()));
+    // when it is re-closed
+    CloseAccountResponse res = close(1L);
+    // then we treat it as a no-op
+    assertThat(res.getSuccess(), is(true));
+    db.useExtension(AccountDao.class, dao -> {
+      assertThat(dao.read(1L).getStatus(), is(AccountStatus.CLOSED));
+    });
+  }
+
   private CreateAccountResponse create(Account.Builder account) {
     CreateAccountRequest req = CreateAccountRequest.newBuilder().setAccount(account.build()).build();
     return StubObserver.<CreateAccountResponse> getSync(o -> server.createAccount(req, o));
