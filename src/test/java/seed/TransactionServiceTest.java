@@ -107,6 +107,12 @@ public class TransactionServiceTest {
     assertThat(rep.getTransaction(), is(t));
   }
 
+  @Test
+  @Ignore
+  public void shouldFailGetTransactionForAnInvalidId() {
+    // Skipping for now
+  }
+
   private TransferResponse transfer(Account from, Account dest, double dollars, String description) {
     TransferRequest req = TransferRequest
       .newBuilder()

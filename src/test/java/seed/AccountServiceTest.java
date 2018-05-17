@@ -3,11 +3,13 @@ package seed;
 import static org.hamcrest.CoreMatchers.hasItems;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
+import static seed.TestData.deposit;
 import static seed.TestData.read;
 import static seed.TestData.save;
 
 import org.jdbi.v3.core.Jdbi;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 public class AccountServiceTest {
@@ -75,9 +77,44 @@ public class AccountServiceTest {
     assertThat(read(db, a).getStatus(), is(AccountStatus.CLOSED));
   }
 
+  @Test
+  public void shouldGetAccountInfoForEmptyAccount() {
+    // given an account with no transactions
+    Account a = save(db, TestData.newAccount());
+    // when executed
+    GetAccountInfoResponse res = getInfo(a);
+    // then we got back the account itself
+    assertThat(res.getAccount(), is(a));
+    // and a balance of $0
+    assertThat(res.getBalanceInCents(), is(0L));
+  }
+
+  @Test
+  public void shouldGetAccountInfoForNonEmptyAccount() {
+    // given an account with some money in it
+    Account a = save(db, TestData.newAccount());
+    deposit(db, a, 100.00);
+    // when executed
+    GetAccountInfoResponse res = getInfo(a);
+    // then we got back the account itself
+    assertThat(res.getAccount(), is(a));
+    // and a balance of $100.00
+    assertThat(res.getBalanceInCents(), is(10000L));
+  }
+
+  @Test
+  @Ignore
+  public void shouldFailGetAccountInfoWithInvalidAccountId() {
+  }
+
   private CreateAccountResponse create(Account.Builder account) {
     CreateAccountRequest req = CreateAccountRequest.newBuilder().setAccount(account.build()).build();
     return StubObserver.<CreateAccountResponse> getSync(o -> server.createAccount(req, o));
+  }
+
+  private GetAccountInfoResponse getInfo(Account account) {
+    GetAccountInfoRequest req = GetAccountInfoRequest.newBuilder().setAccountId(account.getId()).build();
+    return StubObserver.<GetAccountInfoResponse> getSync(o -> server.getInfo(req, o));
   }
 
   private CloseAccountResponse close(long accountId) {

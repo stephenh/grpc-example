@@ -9,6 +9,9 @@ service AccountService {
   rpc CreateAccount(CreateAccountRequest) returns (CreateAccountResponse) {}
   
   rpc CloseAccount(CloseAccountRequest) returns (CloseAccountResponse) {}
+  
+  // named GetInfo instead of just Get because it also returns the balance
+  rpc GetInfo(GetAccountInfoRequest) returns (GetAccountInfoResponse) {}
 }
 
 enum AccountStatus {
@@ -41,4 +44,13 @@ message CloseAccountRequest {
 message CloseAccountResponse {
   bool success = 1;
   repeated string errors = 2;
+}
+
+message GetAccountInfoRequest {
+  int64 accountId = 1;
+}
+
+message GetAccountInfoResponse {
+  Account account = 1;
+  int64 balanceInCents = 2;
 }

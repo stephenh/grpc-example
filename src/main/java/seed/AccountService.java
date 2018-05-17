@@ -53,4 +53,17 @@ public class AccountService extends AccountServiceImplBase {
     });
   }
 
+  @Override
+  public void getInfo(GetAccountInfoRequest request, StreamObserver<GetAccountInfoResponse> response) {
+    GetAccountInfoResponse res = db.withHandle(handle -> {
+      // Would need access checks/etc.
+      Account account = handle.attach(AccountDao.class).read(request.getAccountId());
+      long balance = handle.attach(TransactionDao.class).balance(request.getAccountId());
+      return GetAccountInfoResponse.newBuilder().setAccount(account).setBalanceInCents(balance).build();
+    });
+    // TODO Should have try/catch so that response.onCompleted is always called
+    response.onNext(res);
+    response.onCompleted();
+  }
+
 }
