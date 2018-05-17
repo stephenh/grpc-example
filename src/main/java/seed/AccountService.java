@@ -3,13 +3,13 @@ package seed;
 import org.jdbi.v3.core.Jdbi;
 
 import io.grpc.stub.StreamObserver;
-import seed.SeedGrpc.SeedImplBase;
+import seed.AccountServiceGrpc.AccountServiceImplBase;
 
-public class SeedServer extends SeedImplBase {
+public class AccountService extends AccountServiceImplBase {
 
   private final Jdbi db;
 
-  public SeedServer(Jdbi db) {
+  public AccountService(Jdbi db) {
     this.db = db;
   }
 

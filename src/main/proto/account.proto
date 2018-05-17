@@ -3,9 +3,9 @@ syntax = "proto3";
 
 option java_multiple_files = true;
 option java_package = "seed";
-option java_outer_classname = "SeedProto";
+option java_outer_classname = "AccountProto";
 
-service Seed {
+service AccountService {
   rpc CreateAccount(CreateAccountRequest) returns (CreateAccountResponse) {}
   
   rpc CloseAccount(CloseAccountRequest) returns (CloseAccountResponse) {}

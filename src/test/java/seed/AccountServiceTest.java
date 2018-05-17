@@ -8,15 +8,15 @@ import org.jdbi.v3.core.Jdbi;
 import org.junit.Before;
 import org.junit.Test;
 
-public class SeedServerTest {
+public class AccountServiceTest {
 
   private Jdbi db;
-  private SeedServer server;
+  private AccountService server;
 
   @Before
   public void setup() {
     db = TestData.newDb();
-    server = new SeedServer(db);
+    server = new AccountService(db);
   }
 
   @Test
