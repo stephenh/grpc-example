@@ -9,6 +9,8 @@ service TransactionService {
   rpc Transfer(TransferRequest) returns (TransferResponse) {}
   
   rpc GetByAccount(GetByAccountRequest) returns (GetByAccountResponse) {}
+  
+  rpc Get(GetTransactionRequest) returns (GetTransactionResponse) {}
 }
 
 message Transaction {
@@ -40,4 +42,13 @@ message GetByAccountRequest {
 // Should probably have a boolean success/errors for consistency among all of our responses.
 message GetByAccountResponse {
   repeated Transaction transactions = 1;
+}
+
+// man, these FooRequest/FooResponse messages get boilerplate
+message GetTransactionRequest {
+  int64 transactionId = 1;
+}
+
+message GetTransactionResponse {
+  Transaction transaction = 1;
 }

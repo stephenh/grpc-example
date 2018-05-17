@@ -9,6 +9,7 @@ import static seed.TestData.save;
 
 import org.jdbi.v3.core.Jdbi;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 public class TransactionServiceTest {
@@ -89,6 +90,23 @@ public class TransactionServiceTest {
     assertThat(t2.getAmountInCents(), is(200L));
   }
 
+  @Test
+  @Ignore
+  public void shouldFailGetTransactionsForAnInvalidAccount() {
+    // Skipping for now
+  }
+
+  @Test
+  public void shouldGetTransaction() {
+    // given an account with one transaction
+    Account a = save(db, TestData.newAccount());
+    Transaction t = deposit(db, a, 1.00);
+    // when we get that transaction
+    GetTransactionResponse rep = get(t.getId());
+    // then it matches
+    assertThat(rep.getTransaction(), is(t));
+  }
+
   private TransferResponse transfer(Account from, Account dest, double dollars, String description) {
     TransferRequest req = TransferRequest
       .newBuilder()
@@ -103,6 +121,11 @@ public class TransactionServiceTest {
   private GetByAccountResponse getByAccount(Account from) {
     GetByAccountRequest req = GetByAccountRequest.newBuilder().setAccountId(from.getId()).build();
     return StubObserver.<GetByAccountResponse> getSync(o -> service.getByAccount(req, o));
+  }
+
+  private GetTransactionResponse get(long id) {
+    GetTransactionRequest req = GetTransactionRequest.newBuilder().setTransactionId(id).build();
+    return StubObserver.<GetTransactionResponse> getSync(o -> service.get(req, o));
   }
 
 }

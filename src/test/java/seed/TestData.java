@@ -48,9 +48,9 @@ public class TestData {
     return ((Long) db.withExtension(TransactionDao.class, dao -> dao.balance(account.getId()))).longValue() / 100.00;
   }
 
-  public static void deposit(Jdbi db, Account account, double dollars) {
-    db.useExtension(TransactionDao.class, dao -> {
-      dao.insert(
+  public static Transaction deposit(Jdbi db, Account account, double dollars) {
+    return db.withExtension(TransactionDao.class, dao -> {
+      long id = dao.insert(
         Transaction
           .newBuilder()
           .setAccountId(account.getId())
@@ -58,6 +58,7 @@ public class TestData {
           .setAmountInCents((long) (dollars * 100.00))
           .setDescription("deposit")
           .build());
+      return dao.read(id);
     });
   }
 

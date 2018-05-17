@@ -93,4 +93,15 @@ public class TransactionService extends TransactionServiceImplBase {
     response.onCompleted();
   }
 
+  @Override
+  public void get(GetTransactionRequest request, StreamObserver<GetTransactionResponse> response) {
+    Transaction transaction = db.withExtension(TransactionDao.class, dao -> {
+      // Would need access checks/etc.
+      return dao.read(request.getTransactionId());
+    });
+    // TODO Add try/catch in case withExtension throws
+    response.onNext(GetTransactionResponse.newBuilder().setTransaction(transaction).build());
+    response.onCompleted();
+  }
+
 }
