@@ -35,12 +35,22 @@ public class TransactionServiceTest {
     // and a1 has $100 in it
     deposit(db, a1, 100.00);
     // when we transfer $100 from a1 to a2
-    TransferResponse rep = transfer(a1, a2, 100.00);
+    TransferResponse rep = transfer(a1, a2, 100.00, "transfer 1");
     // then it's a success
     assertThat(rep.getSuccess(), is(true));
     // and the balances have changed
     assertThat(balance(db, a1), is(0.00));
     assertThat(balance(db, a2), is(100.00));
+    // and the source transaction looks good
+    Transaction t1 = db.withExtension(TransactionDao.class, dao -> dao.read(2L));
+    assertThat(t1.getAccountId(), is(a1.getId()));
+    assertThat(t1.getAmountInCents(), is(-10000L));
+    assertThat(t1.getDescription(), is("transfer 1"));
+    // and the destination transaction looks good
+    Transaction t2 = db.withExtension(TransactionDao.class, dao -> dao.read(3L));
+    assertThat(t2.getAccountId(), is(a2.getId()));
+    assertThat(t2.getAmountInCents(), is(10000L));
+    assertThat(t2.getDescription(), is("transfer 1"));
   }
 
   @Test
@@ -51,7 +61,7 @@ public class TransactionServiceTest {
     // and a1 has $10 in it
     deposit(db, a1, 10.00);
     // when we transfer $100 from a1 to a2
-    TransferResponse rep = transfer(a1, a2, 100.00);
+    TransferResponse rep = transfer(a1, a2, 100.00, "transfer 1");
     // then it fails
     assertThat(rep.getSuccess(), is(false));
     assertThat(rep.getErrorsList(), hasItems("Insufficient funds"));
@@ -60,12 +70,13 @@ public class TransactionServiceTest {
     assertThat(balance(db, a2), is(0.00));
   }
 
-  private TransferResponse transfer(Account from, Account dest, double dollars) {
+  private TransferResponse transfer(Account from, Account dest, double dollars, String description) {
     TransferRequest req = TransferRequest
       .newBuilder()
       .setSourceAccountId(from.getId())
       .setDestinationAccountId(dest.getId())
       .setAmountInCents((int) (dollars * 100))
+      .setDescription(description)
       .build();
     return StubObserver.<TransferResponse> getSync(o -> service.transfer(req, o));
   }

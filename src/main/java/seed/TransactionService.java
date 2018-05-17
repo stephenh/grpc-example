@@ -18,6 +18,7 @@ public class TransactionService extends TransactionServiceImplBase {
   public void transfer(TransferRequest req, StreamObserver<TransferResponse> res) {
     TransferResponse response = db.inTransaction(TransactionIsolationLevel.SERIALIZABLE, handle -> {
       TransactionDao dao = handle.attach(TransactionDao.class);
+      // TODO Add some sanity checks to sourceBalance, e.g. should be positive, should probably not be $1 billion
       long sourceBalance = dao.balance(req.getSourceAccountId());
       if (sourceBalance >= req.getAmountInCents()) {
         // TODO use a clock
@@ -29,6 +30,8 @@ public class TransactionService extends TransactionServiceImplBase {
             .setAccountId(req.getSourceAccountId())
             .setAmountInCents(req.getAmountInCents() * -1)
             .setTimestampInMillis(now)
+            // TODO: I think "" is allowed, which we should probably reject
+            .setDescription(req.getDescription())
             .build());
         dao.insert(
           Transaction
@@ -36,6 +39,7 @@ public class TransactionService extends TransactionServiceImplBase {
             .setAccountId(req.getDestinationAccountId())
             .setAmountInCents(req.getAmountInCents())
             .setTimestampInMillis(now)
+            .setDescription(req.getDescription())
             .build());
 
         // We're in a transaction but technically should throb something on the

@@ -16,12 +16,14 @@ message Transaction {
   int64 timestampInMillis = 3;
   // Assuming single-currency/USD.
   int64 amountInCents = 4;
+  string description = 5;
 }
 
 message TransferRequest {
   int64 sourceAccountId = 1;
   int64 destinationAccountId = 2;
   int64 amountInCents = 3;
+  string description = 4;
 }
 
 message TransferResponse {

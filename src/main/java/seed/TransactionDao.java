@@ -13,9 +13,12 @@ public interface TransactionDao {
   @SqlScript
   void createTable();
 
-  @SqlUpdate("INSERT INTO transaction (time, account_id, amount) VALUES (:timestampInMillis, :accountId, :amountInCents)")
+  @SqlUpdate("INSERT INTO transaction (time, account_id, amount, description) VALUES (:timestampInMillis, :accountId, :amountInCents, :description)")
   @GetGeneratedKeys
   long insert(@BindBean Transaction transaction);
+
+  @SqlQuery("SELECT id, account_id AS accountId, amount AS amountInCents, description FROM transaction WHERE id = ?")
+  Transaction read(long id);
 
   @SqlQuery("SELECT SUM(amount) FROM transaction WHERE account_id = ?")
   long balance(long accountId);

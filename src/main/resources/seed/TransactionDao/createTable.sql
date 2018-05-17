@@ -9,5 +9,6 @@ CREATE TABLE transaction (
   -- Would prefer using a timestamp/something but h2 doesn't map millis directly, so punting
   time BIGINT NOT NULL,
   account_id INT NOT NULL,
+  description VARCHAR(500) NOT NULL,
   amount BIGINT NOT NULL,
   FOREIGN KEY (account_id) REFERENCES account (id));
