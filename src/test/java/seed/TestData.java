@@ -26,6 +26,33 @@ public class TestData {
     return db;
   }
 
+  // Kind of ugly, but add some helpers to make our tests prettier to read
+  public static Account save(Jdbi db, Account.Builder account) {
+    if (account.getId() == 0) {
+      long id = db.withExtension(AccountDao.class, dao -> dao.insert(account.build()));
+      return account.setId(id).build();
+    } else {
+      db.useExtension(AccountDao.class, dao -> dao.update(account.build()));
+      return account.build();
+    }
+  }
+
+  public static double balance(Jdbi db, Account account) {
+    return ((Long) db.withExtension(TransactionDao.class, dao -> dao.balance(account.getId()))).longValue() / 100.00;
+  }
+
+  public static void deposit(Jdbi db, Account account, double dollars) {
+    db.useExtension(TransactionDao.class, dao -> {
+      dao.insert(
+        Transaction
+          .newBuilder()
+          .setAccountId(account.getId())
+          .setTimestampInMillis(System.currentTimeMillis()) // should use a clock
+          .setAmountInCents((long) (dollars * 100.00))
+          .build());
+    });
+  }
+
   public static Account.Builder newAccount() {
     return Account.newBuilder().setName("bob").setAddress("123 Road").setSsn("111-111-1111");
   }

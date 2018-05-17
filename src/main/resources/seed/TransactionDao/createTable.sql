@@ -6,7 +6,8 @@
 -- is not a good idea as this isn't an accounting system. So avoiding all of that.
 CREATE TABLE transaction (
   id INT AUTO_INCREMENT,
-  time TIMESTAMP WITH TIME ZONE,
-  account_id INT,
-  amount BIGINT,
+  -- Would prefer using a timestamp/something but h2 doesn't map millis directly, so punting
+  time BIGINT NOT NULL,
+  account_id INT NOT NULL,
+  amount BIGINT NOT NULL,
   FOREIGN KEY (account_id) REFERENCES account (id));

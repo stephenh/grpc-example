@@ -1,0 +1,30 @@
+
+syntax = "proto3";
+
+option java_multiple_files = true;
+option java_package = "seed";
+option java_outer_classname = "TransactionProto";
+
+service TransactionService {
+  rpc Transfer(TransferRequest) returns (TransferResponse) {}
+}
+
+message Transaction {
+  int64 id = 1;
+  int64 accountId = 2;
+  // Should use a better type, e.g. google.protobuf.Timestamp, but punting on that.
+  int64 timestampInMillis = 3;
+  // Assuming single-currency/USD.
+  int64 amountInCents = 4;
+}
+
+message TransferRequest {
+  int64 sourceAccountId = 1;
+  int64 destinationAccountId = 2;
+  int64 amountInCents = 3;
+}
+
+message TransferResponse {
+  bool success = 1;
+  repeated string errors = 2;
+}
