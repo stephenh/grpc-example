@@ -66,22 +66,12 @@ public class AccountServiceTest {
 
   private CreateAccountResponse create(Account.Builder account) {
     CreateAccountRequest req = CreateAccountRequest.newBuilder().setAccount(account.build()).build();
-    // this is boilerplate-y, not a fan grpc's approach here
-    StubObserver<CreateAccountResponse> res = new StubObserver<>();
-    server.createAccount(req, res);
-    assertThat(res.values.size(), is(1));
-    assertThat(res.completed, is(true));
-    return res.values.get(0);
+    return StubObserver.<CreateAccountResponse> getSync(o -> server.createAccount(req, o));
   }
 
   private CloseAccountResponse close(long accountId) {
     CloseAccountRequest req = CloseAccountRequest.newBuilder().setId(accountId).build();
-    // this is boilerplate-y, not a fan grpc's approach here
-    StubObserver<CloseAccountResponse> res = new StubObserver<>();
-    server.closeAccount(req, res);
-    assertThat(res.values.size(), is(1));
-    assertThat(res.completed, is(true));
-    return res.values.get(0);
+    return StubObserver.<CloseAccountResponse> getSync(o -> server.closeAccount(req, o));
   }
 
 }
