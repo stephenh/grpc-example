@@ -1,6 +1,7 @@
 package seed;
 
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Consumer;
 
 import org.jdbi.v3.core.Jdbi;
 import org.jdbi.v3.sqlobject.SqlObjectPlugin;
@@ -49,15 +50,20 @@ public class TestData {
   }
 
   public static Transaction deposit(Jdbi db, Account account, double dollars) {
+    return deposit(db, account, dollars, t -> {
+    });
+  }
+
+  public static Transaction deposit(Jdbi db, Account account, double dollars, Consumer<Transaction.Builder> f) {
     return db.withExtension(TransactionDao.class, dao -> {
-      long id = dao.insert(
-        Transaction
-          .newBuilder()
-          .setAccountId(account.getId())
-          .setTimestampInMillis(System.currentTimeMillis()) // should use a clock
-          .setAmountInCents((long) (dollars * 100.00))
-          .setDescription("deposit")
-          .build());
+      Transaction.Builder t = Transaction
+        .newBuilder()
+        .setAccountId(account.getId())
+        .setTimestampInMillis(System.currentTimeMillis()) // should use a clock
+        .setAmountInCents((long) (dollars * 100.00))
+        .setDescription("deposit");
+      f.accept(t);
+      long id = dao.insert(t.build());
       return dao.read(id);
     });
   }

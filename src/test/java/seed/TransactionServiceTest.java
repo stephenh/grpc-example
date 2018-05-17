@@ -2,10 +2,18 @@ package seed;
 
 import static org.hamcrest.CoreMatchers.hasItems;
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.empty;
 import static org.junit.Assert.assertThat;
 import static seed.TestData.balance;
 import static seed.TestData.deposit;
 import static seed.TestData.save;
+
+import java.time.ZoneId;
+import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
+import java.util.List;
+import java.util.function.Consumer;
 
 import org.jdbi.v3.core.Jdbi;
 import org.junit.Before;
@@ -13,6 +21,12 @@ import org.junit.Ignore;
 import org.junit.Test;
 
 public class TransactionServiceTest {
+
+  private static final ZonedDateTime dec31 = ZonedDateTime.of(1999, 12, 31, 0, 0, 0, 0, ZoneOffset.UTC);
+  private static final ZonedDateTime jan1 = ZonedDateTime.of(2000, 1, 1, 0, 0, 0, 0, ZoneOffset.UTC);
+  private static final ZonedDateTime jan5 = ZonedDateTime.of(2000, 1, 5, 0, 0, 0, 0, ZoneOffset.UTC);
+  private static final ZonedDateTime jan10 = ZonedDateTime.of(2000, 1, 10, 0, 0, 0, 0, ZoneOffset.UTC);
+  private static final ZonedDateTime jan20 = ZonedDateTime.of(2000, 1, 20, 0, 0, 0, 0, ZoneOffset.UTC);
 
   private Jdbi db;
   private TransactionService service;
@@ -108,6 +122,54 @@ public class TransactionServiceTest {
   }
 
   @Test
+  public void shouldSearchTransactionsByAmount() {
+    // given an account with a $5, $10, and $15 transaction
+    Account a = save(db, TestData.newAccount());
+    Transaction t5 = deposit(db, a, 5.00);
+    Transaction t10 = deposit(db, a, 10.00);
+    Transaction t15 = deposit(db, a, 15.00);
+    // when we search for >=$10, we get two txns
+    assertThat(search(a, req -> req.setMinimumAmountInCents(cents(10.00))), contains(t10, t15));
+    // and when we search for <=$10, we get two txns
+    assertThat(search(a, req -> req.setMaximumAmountIncents(cents(10.00))), contains(t5, t10));
+    // and when we search >=$20, we get zero transactions
+    assertThat(search(a, req -> req.setMinimumAmountInCents(cents(20.00))), empty());
+    // and when we search <=$4, we get zero transactions
+    assertThat(search(a, req -> req.setMaximumAmountIncents(cents(4.00))), empty());
+    // TODO should test negative transactions
+  }
+
+  @Test
+  public void shouldSearchTransactionsByDate() {
+    // given an account with transactions on jan1, jan5, and jan10
+    Account a = save(db, TestData.newAccount());
+    Transaction t1 = deposit(db, a, 1.00, t -> t.setTimestampInMillis(millis(jan1)));
+    Transaction t5 = deposit(db, a, 1.00, t -> t.setTimestampInMillis(millis(jan5)));
+    Transaction t10 = deposit(db, a, 1.00, t -> t.setTimestampInMillis(millis(jan10)));
+    // when we search for >= jan5, we get two txns
+    assertThat(search(a, req -> req.setMinimumTimestamp(millis(jan5))), contains(t5, t10));
+    // and when we search for <= jan5, we get two txns
+    assertThat(search(a, req -> req.setMaximumTimestamp(millis(jan5))), contains(t1, t5));
+    // and when we search >= jan20, we get zero transactions
+    assertThat(search(a, req -> req.setMinimumTimestamp(millis(jan20))), empty());
+    // and when we search <= dec31, we get zero transactions
+    assertThat(search(a, req -> req.setMaximumTimestamp(millis(dec31))), empty());
+  }
+
+  @Test
+  public void shouldSearchTransactionsAmountAndByDate() {
+    // given an account with transactions on jan5 of $5 and $10
+    Account a = save(db, TestData.newAccount());
+    deposit(db, a, 5.00, t -> t.setTimestampInMillis(millis(jan5)));
+    Transaction t2 = deposit(db, a, 10.00, t -> t.setTimestampInMillis(millis(jan5)));
+    // when we search for >= jan5 and >= $10, we get back only the tax
+    assertThat(search(a, req -> {
+      req.setMinimumTimestamp(millis(jan5));
+      req.setMinimumAmountInCents(cents(10.00));
+    }), contains(t2));
+  }
+
+  @Test
   @Ignore
   public void shouldFailGetTransactionForAnInvalidId() {
     // Skipping for now
@@ -132,6 +194,21 @@ public class TransactionServiceTest {
   private GetTransactionResponse get(long id) {
     GetTransactionRequest req = GetTransactionRequest.newBuilder().setTransactionId(id).build();
     return StubObserver.<GetTransactionResponse> getSync(o -> service.get(req, o));
+  }
+
+  private List<Transaction> search(Account account, Consumer<SearchTransactionsRequest.Builder> f) {
+    SearchTransactionsRequest.Builder req = SearchTransactionsRequest.newBuilder().setAccountId(account.getId());
+    f.accept(req);
+    SearchTransactionsResponse res = StubObserver.<SearchTransactionsResponse> getSync(o -> service.searchInAccount(req.build(), o));
+    return res.getTransactionsList();
+  }
+
+  private static long cents(double dollars) {
+    return (long) (dollars * 100);
+  }
+
+  private static long millis(ZonedDateTime d) {
+    return d.toInstant().toEpochMilli();
   }
 
 }

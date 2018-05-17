@@ -1,6 +1,7 @@
 package seed;
 
 import java.util.List;
+import java.util.Optional;
 
 import org.jdbi.v3.core.Jdbi;
 import org.jdbi.v3.core.transaction.TransactionIsolationLevel;
@@ -101,6 +102,21 @@ public class TransactionService extends TransactionServiceImplBase {
     });
     // TODO Add try/catch in case withExtension throws
     response.onNext(GetTransactionResponse.newBuilder().setTransaction(transaction).build());
+    response.onCompleted();
+  }
+
+  @Override
+  public void searchInAccount(SearchTransactionsRequest req, StreamObserver<SearchTransactionsResponse> response) {
+    List<Transaction> txns = db.withExtension(TransactionDao.class, dao -> {
+      return dao.search(
+        req.getAccountId(),
+        Optional.of(req.getMinimumTimestamp()).filter(l -> l != 0),
+        Optional.of(req.getMaximumTimestamp()).filter(l -> l != 0),
+        Optional.of(req.getMinimumAmountInCents()).filter(l -> l != 0),
+        Optional.of(req.getMaximumAmountIncents()).filter(l -> l != 0));
+    });
+    // TODO Add try/catch in case withExtension throws
+    response.onNext(SearchTransactionsResponse.newBuilder().addAllTransactions(txns).build());
     response.onCompleted();
   }
 

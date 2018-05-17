@@ -26,3 +26,21 @@ For storage, considered:
 
 * For JDBC/ORM/etc., I haven't used [JDBI](http://jdbi.org/) before, but seems simple.
 
+Other Misc Notes
+================
+
+* I'm deferring all latency/throughput/etc. reporting to infrastructure magic, e.g. combination of grpc + whatever glue.
+
+* I'm purposefully not doing retries.
+
+* I've not thought about timeout scenarios. Or connection pooling.
+
+* I purposefully used millis for dates as I assume this is not truly "the user" facing, and dealing with string-formatted dates and time zones is a PITA. Granted, it makes debugging harder as I cannot yet do millis -> date in my head. That said, this vim macro will do it:
+
+```
+command Timestamps %s/\d\@<!\(\d\{10}\)\d\{3}\d\@!/\=strftime('%c', submatch(1))/g
+```
+
+* I also purposefully used cents for storage b/c floating point is evil. I do use `100.00`-style doubles in the tests though, which I allow for better test readability. I also purposefully included "InCents" suffixes in the RPC types to be obvious what the primitive value is. Granted, some sort of user-type like `Cents` or `MoneyAmount` would be cool too, but not pursuing that tangent.
+
+
