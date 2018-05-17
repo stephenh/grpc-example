@@ -33,7 +33,7 @@ public class TransactionServiceTest {
 
   @Before
   public void setup() {
-    db = TestData.newDb();
+    db = Database.newDb();
     service = new TransactionService(db);
   }
 

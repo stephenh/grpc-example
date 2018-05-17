@@ -19,7 +19,7 @@ public class AccountServiceTest {
 
   @Before
   public void setup() {
-    db = TestData.newDb();
+    db = Database.newDb();
     server = new AccountService(db);
   }
 
