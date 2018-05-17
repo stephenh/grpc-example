@@ -22,6 +22,7 @@ public class TestData {
     // Currently just re-issue all of the DML each time. In production would use migrations, e.g.
     // https://github.com/stephenh/joist/blob/master/features/src/migrations/java/features/migrations/m0001.java
     db.useExtension(AccountDao.class, dao -> dao.createTable());
+    db.useExtension(TransactionDao.class, dao -> dao.createTable());
     return db;
   }
 
