@@ -3,6 +3,8 @@ package seed;
 import static org.hamcrest.CoreMatchers.hasItems;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
+import static seed.TestData.read;
+import static seed.TestData.save;
 
 import org.jdbi.v3.core.Jdbi;
 import org.junit.Before;
@@ -53,28 +55,24 @@ public class AccountServiceTest {
   @Test
   public void shouldCloseAccounts() {
     // given an existing account
-    db.useExtension(AccountDao.class, dao -> dao.insert(TestData.newAccount().build()));
+    Account a = save(db, TestData.newAccount());
     // when it is closed
-    CloseAccountResponse res = close(1L);
+    CloseAccountResponse res = close(a.getId());
     // then it worked
     assertThat(res.getSuccess(), is(true));
     // and the account is closed
-    db.useExtension(AccountDao.class, dao -> {
-      assertThat(dao.read(1L).getStatus(), is(AccountStatus.CLOSED));
-    });
+    assertThat(read(db, a).getStatus(), is(AccountStatus.CLOSED));
   }
 
   @Test
   public void shouldCloseAnAlreadyClosedAccounts() {
     // given an existing closed account
-    db.useExtension(AccountDao.class, dao -> dao.insert(TestData.newAccount().setStatus(AccountStatus.CLOSED).build()));
+    Account a = save(db, TestData.newAccount().setStatus(AccountStatus.CLOSED));
     // when it is re-closed
-    CloseAccountResponse res = close(1L);
+    CloseAccountResponse res = close(a.getId());
     // then we treat it as a no-op
     assertThat(res.getSuccess(), is(true));
-    db.useExtension(AccountDao.class, dao -> {
-      assertThat(dao.read(1L).getStatus(), is(AccountStatus.CLOSED));
-    });
+    assertThat(read(db, a).getStatus(), is(AccountStatus.CLOSED));
   }
 
   private CreateAccountResponse create(Account.Builder account) {

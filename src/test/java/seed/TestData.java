@@ -37,6 +37,10 @@ public class TestData {
     }
   }
 
+  public static Account read(Jdbi db, Account account) {
+    return db.withExtension(AccountDao.class, dao -> dao.read(account.getId()));
+  }
+
   public static double balance(Jdbi db, Account account) {
     return ((Long) db.withExtension(TransactionDao.class, dao -> dao.balance(account.getId()))).longValue() / 100.00;
   }
