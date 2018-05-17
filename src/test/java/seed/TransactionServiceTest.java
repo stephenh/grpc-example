@@ -70,6 +70,25 @@ public class TransactionServiceTest {
     assertThat(balance(db, a2), is(0.00));
   }
 
+  @Test
+  public void shouldGetTransactionsForAnAccount() {
+    // given an account with several transactions
+    Account a = save(db, TestData.newAccount());
+    deposit(db, a, 1.00);
+    deposit(db, a, 2.00);
+    // when we get the transactions
+    GetByAccountResponse rep = getByAccount(a);
+    // then we see both transactions
+    assertThat(rep.getTransactionsCount(), is(2));
+    Transaction t1 = rep.getTransactions(0);
+    assertThat(t1.getDescription(), is("deposit"));
+    assertThat(t1.getAmountInCents(), is(100L));
+    // and the second transaction as well
+    Transaction t2 = rep.getTransactions(1);
+    assertThat(t2.getDescription(), is("deposit"));
+    assertThat(t2.getAmountInCents(), is(200L));
+  }
+
   private TransferResponse transfer(Account from, Account dest, double dollars, String description) {
     TransferRequest req = TransferRequest
       .newBuilder()
@@ -79,6 +98,11 @@ public class TransactionServiceTest {
       .setDescription(description)
       .build();
     return StubObserver.<TransferResponse> getSync(o -> service.transfer(req, o));
+  }
+
+  private GetByAccountResponse getByAccount(Account from) {
+    GetByAccountRequest req = GetByAccountRequest.newBuilder().setAccountId(from.getId()).build();
+    return StubObserver.<GetByAccountResponse> getSync(o -> service.getByAccount(req, o));
   }
 
 }

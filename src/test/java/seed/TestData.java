@@ -5,6 +5,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.jdbi.v3.core.Jdbi;
 import org.jdbi.v3.sqlobject.SqlObjectPlugin;
 
+/** Helper methods to give our tests low-level access to the database for setup/assertions. */
 public class TestData {
 
   private static final AtomicLong nextDbId = new AtomicLong();
@@ -55,6 +56,7 @@ public class TestData {
           .setAccountId(account.getId())
           .setTimestampInMillis(System.currentTimeMillis()) // should use a clock
           .setAmountInCents((long) (dollars * 100.00))
+          .setDescription("deposit")
           .build());
     });
   }

@@ -1,5 +1,7 @@
 package seed;
 
+import java.util.List;
+
 import org.jdbi.v3.core.Jdbi;
 import org.jdbi.v3.core.transaction.TransactionIsolationLevel;
 
@@ -79,6 +81,16 @@ public class TransactionService extends TransactionServiceImplBase {
     // TODO Add try/catch in case withTransaction throws
     res.onNext(response);
     res.onCompleted();
+  }
+
+  @Override
+  public void getByAccount(GetByAccountRequest request, StreamObserver<GetByAccountResponse> response) {
+    List<Transaction> transactions = db.withExtension(TransactionDao.class, dao -> {
+      return dao.readForAccount(request.getAccountId());
+    });
+    // TODO Add try/catch in case withExtension throws
+    response.onNext(GetByAccountResponse.newBuilder().addAllTransactions(transactions).build());
+    response.onCompleted();
   }
 
 }

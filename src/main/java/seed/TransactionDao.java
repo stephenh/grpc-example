@@ -1,5 +1,7 @@
 package seed;
 
+import java.util.List;
+
 import org.jdbi.v3.sqlobject.customizer.BindBean;
 import org.jdbi.v3.sqlobject.locator.UseClasspathSqlLocator;
 import org.jdbi.v3.sqlobject.statement.GetGeneratedKeys;
@@ -19,6 +21,9 @@ public interface TransactionDao {
 
   @SqlQuery("SELECT id, account_id AS accountId, amount AS amountInCents, description FROM transaction WHERE id = ?")
   Transaction read(long id);
+
+  @SqlQuery("SELECT id, account_id AS accountId, amount AS amountInCents, description FROM transaction WHERE account_id = ?")
+  List<Transaction> readForAccount(long accountId);
 
   @SqlQuery("SELECT SUM(amount) FROM transaction WHERE account_id = ?")
   long balance(long accountId);

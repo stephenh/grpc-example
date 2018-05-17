@@ -7,6 +7,8 @@ option java_outer_classname = "TransactionProto";
 
 service TransactionService {
   rpc Transfer(TransferRequest) returns (TransferResponse) {}
+  
+  rpc GetByAccount(GetByAccountRequest) returns (GetByAccountResponse) {}
 }
 
 message Transaction {
@@ -29,4 +31,13 @@ message TransferRequest {
 message TransferResponse {
   bool success = 1;
   repeated string errors = 2;
+}
+
+message GetByAccountRequest {
+  int64 accountId = 1;
+}
+
+// Should probably have a boolean success/errors for consistency among all of our responses.
+message GetByAccountResponse {
+  repeated Transaction transactions = 1;
 }
