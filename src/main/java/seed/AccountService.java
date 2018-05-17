@@ -26,6 +26,11 @@ public class AccountService extends AccountServiceImplBase {
     //
     // Also we should probably not let the same person open tons of accounts; more than one
     // is probably okay, but spamming us with 1000s would not. Defer to PM.
+    //
+    // Also, there is a unknown bug where grpc gives strings a default value of "", so we're sending
+    // those default values to the database; they should be stripped to be null, so that they trigger
+    // the not-null constraints. Would be nice to sanitize all empty strings to null somewhere inside
+    // of jdbi, instead of spreading it all over.
 
     // Accounts being always-open when created wasn't explicitly mentioned, but makes sense. In
     // real-life would probably start as pending review or something like that.
