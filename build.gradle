@@ -52,6 +52,16 @@ protobuf {
   }
 }
 
+task server(type: JavaExec) {
+  classpath = sourceSets.main.runtimeClasspath
+  main = 'seed.SeedServer'
+}
+
+task client(type: JavaExec) {
+  classpath = sourceSets.main.runtimeClasspath
+  main = 'seed.SeedClient'
+}
+
 sourceCompatibility = 1.8
 targetCompatibility = 1.8
 

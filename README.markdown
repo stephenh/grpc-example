@@ -1,4 +1,13 @@
 
+Run Instructions
+================
+
+In one terminal, run `./gradlew server`.
+
+In another terminal, run `./gradlew client`.
+
+Note that currently there is a ton of grpc log output.
+
 Design Thought Process
 ======================
 
