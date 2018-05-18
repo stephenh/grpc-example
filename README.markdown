@@ -28,7 +28,7 @@ I really like schema-driven APIs, so considered:
 
 * GraphQL, like the idea, but seems like more internal API, vs. public API, and don't need the cross-entity graph/etc. for this.
 
-* grpc-java, which is not natively REST friendly, so also more of an internal-only API choice, but going with this as I've used it before.
+* grpc-java, which is not natively REST friendly, so also more of an internal-only API choice, but going with this as I've used it before (just for a small hobby project, [mirror](https://github.com/stephenh/mirror)).
 
   (Granted, Seed is Go and I remember [Twirp](https://blog.twitch.tv/twirp-a-sweet-new-rpc-framework-for-go-5f2febbf35f) going by, so apologies if grpc is a red flag.)
 
