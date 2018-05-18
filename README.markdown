@@ -8,6 +8,15 @@ In another terminal, run `./gradlew client`.
 
 Note that currently there is a ton of grpc log output.
 
+Code Pointers
+=============
+
+* The API is defined in [account.proto](blob/master/src/main/proto/account.proto) and [transaction.proto](blob/master/src/main/proto/transaction.proto).
+
+* Services are in [AccountService](blob/master/src/main/java/seed/AccountService.java) and [TransactionService](blob/master/src/main/java/seed/TransactionService.java).
+
+* Tests are in [AccountServiceTest](blob/master/src/test/java/seed/AccountServiceTest.java) and [TransactionServiceTest](blob/master/src/test/java/seed/TransactionServiceTest.java)
+
 Design Thought Process
 ======================
 
@@ -22,6 +31,8 @@ I really like schema-driven APIs, so considered:
 * grpc-java, which is not natively REST friendly, so also more of an internal-only API choice, but going with this as I've used it before.
 
   (Granted, Seed is Go and I remember [Twirp](https://blog.twitch.tv/twirp-a-sweet-new-rpc-framework-for-go-5f2febbf35f) going by, so apologies if grpc is a red flag.)
+
+  (Also, in retrospect there are definitely boilerplate-y aspects to grpc, e.g. builders everywhere. Also, I do generally prefer more noun-/entity-based modeling, as then the CRUD/verb/plumbing is implicit/100% standardized vs. being slightly bespoke for each "RPC that is trying to be an entity".)
 
 For storage, considered:
 
@@ -51,5 +62,7 @@ command Timestamps %s/\d\@<!\(\d\{10}\)\d\{3}\d\@!/\=strftime('%c', submatch(1))
 ```
 
 * I also purposefully used cents for storage b/c floating point is evil. I do use `100.00`-style doubles in the tests though, which I allow for better test readability. I also purposefully included "InCents" suffixes in the RPC types to be obvious what the primitive value is. Granted, some sort of user-type like `Cents` or `MoneyAmount` would be cool too, but not pursuing that tangent.
+
+* I'm assuming single currency/USD.
 
 
