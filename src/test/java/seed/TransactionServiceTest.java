@@ -68,7 +68,7 @@ public class TransactionServiceTest {
   }
 
   @Test
-  public void shouldNotAllowAnOverride() {
+  public void shouldNotAllowAnOverdraft() {
     // given two existing accounts
     Account a1 = save(db, TestData.newAccount());
     Account a2 = save(db, TestData.newAccount());
