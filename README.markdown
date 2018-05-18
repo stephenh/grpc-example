@@ -44,7 +44,9 @@ For storage, considered:
 
   Using sqlite/h2 also seems I can probably cheat and have unit tests use the real database instead of mocking/stubbing things out.
 
-* For JDBC/ORM/etc., I haven't used [JDBI](http://jdbi.org/) before, but seems simple.
+* For JDBC/ORM/etc., I haven't used [JDBI](http://jdbi.org/) before, but it seems simple, so I'm using that.
+
+  (After having implemented this example with JDBI, it does seem fine for what it is, just a nicer way to do SQL, but I'm not completely anti-ORM yet either. Re-typing out CRUD DAOs in JDBI for every table would get old. Granted, could code generate those.)
 
 Other Misc Notes
 ================
