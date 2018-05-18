@@ -11,11 +11,11 @@ Note that currently there is a ton of grpc log output.
 Code Pointers
 =============
 
-* The API is defined in [account.proto](blob/master/src/main/proto/account.proto) and [transaction.proto](blob/master/src/main/proto/transaction.proto).
+* The API is defined in [account.proto](src/main/proto/account.proto) and [transaction.proto](src/main/proto/transaction.proto).
 
-* Services are in [AccountService](blob/master/src/main/java/seed/AccountService.java) and [TransactionService](blob/master/src/main/java/seed/TransactionService.java).
+* Services are in [AccountService](src/main/java/seed/AccountService.java) and [TransactionService](src/main/java/seed/TransactionService.java).
 
-* Tests are in [AccountServiceTest](blob/master/src/test/java/seed/AccountServiceTest.java) and [TransactionServiceTest](blob/master/src/test/java/seed/TransactionServiceTest.java)
+* Tests are in [AccountServiceTest](src/test/java/seed/AccountServiceTest.java) and [TransactionServiceTest](src/test/java/seed/TransactionServiceTest.java)
 
 Design Thought Process
 ======================
