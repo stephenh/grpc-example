@@ -21,6 +21,17 @@ public class TransactionService extends TransactionServiceImplBase {
   public void transfer(TransferRequest req, StreamObserver<TransferResponse> res) {
     TransferResponse response = db.inTransaction(TransactionIsolationLevel.SERIALIZABLE, handle -> {
       TransactionDao dao = handle.attach(TransactionDao.class);
+
+      Account sourceAccount = handle.attach(AccountDao.class).read(req.getSourceAccountId());
+      if (sourceAccount.getStatus() == AccountStatus.CLOSED) {
+        return TransferResponse.newBuilder().setSuccess(false).addErrors("Source account is closed").build();
+      }
+
+      Account destinationAccount = handle.attach(AccountDao.class).read(req.getDestinationAccountId());
+      if (destinationAccount.getStatus() == AccountStatus.CLOSED) {
+        return TransferResponse.newBuilder().setSuccess(false).addErrors("Destination account is closed").build();
+      }
+
       // TODO Add some sanity checks to sourceBalance, e.g. should be positive, should probably not be $1 billion
       long sourceBalance = dao.balance(req.getSourceAccountId());
       if (sourceBalance >= req.getAmountInCents()) {

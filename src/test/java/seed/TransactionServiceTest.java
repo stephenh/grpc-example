@@ -85,6 +85,40 @@ public class TransactionServiceTest {
   }
 
   @Test
+  public void shouldNotAllowTransferFromClosedAccounts() {
+    // given a source account that is closed
+    Account a1 = save(db, TestData.newAccount().setStatus(AccountStatus.CLOSED));
+    Account a2 = save(db, TestData.newAccount());
+    // and a1 has $100 in it
+    deposit(db, a1, 100.00);
+    // when we transfer $100 from a1 to a2
+    TransferResponse rep = transfer(a1, a2, 100.00, "transfer 1");
+    // then it fails
+    assertThat(rep.getSuccess(), is(false));
+    assertThat(rep.getErrorsList(), hasItems("Source account is closed"));
+    // and the balances have not changed
+    assertThat(balance(db, a1), is(100.00));
+    assertThat(balance(db, a2), is(0.00));
+  }
+
+  @Test
+  public void shouldNotAllowTransferToClosedAccounts() {
+    // given a destination account that is closed
+    Account a1 = save(db, TestData.newAccount());
+    Account a2 = save(db, TestData.newAccount().setStatus(AccountStatus.CLOSED));
+    // and a1 has $100 in it
+    deposit(db, a1, 100.00);
+    // when we transfer $100 from a1 to a2
+    TransferResponse rep = transfer(a1, a2, 100.00, "transfer 1");
+    // then it fails
+    assertThat(rep.getSuccess(), is(false));
+    assertThat(rep.getErrorsList(), hasItems("Destination account is closed"));
+    // and the balances have not changed
+    assertThat(balance(db, a1), is(100.00));
+    assertThat(balance(db, a2), is(0.00));
+  }
+
+  @Test
   public void shouldGetTransactionsForAnAccount() {
     // given an account with several transactions
     Account a = save(db, TestData.newAccount());
